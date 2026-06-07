@@ -1,3 +1,5 @@
+<img width="559" height="1280" alt="image" src="https://github.com/user-attachments/assets/1ed5a2b8-f286-45b8-aa46-5ee3ae30845d" />
+
 # ShadowTalk
 
 ShadowTalk is a simple Android app for **voice shadowing practice**. Shadowing is a language-learning technique where you listen to native speech and speak along simultaneously, mimicking pronunciation, rhythm, and intonation.
