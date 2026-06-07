@@ -1,4 +1,4 @@
-<img height="400" alt="image" src="https://github.com/user-attachments/assets/5cce544a-8739-4621-a0e7-958a8fcb1bf0" />
+<img height="400" alt="image" src="https://github.com/user-attachments/assets/dfa5ad39-9f5d-4d8a-a63b-fa5e8dcec2c4" />
 
 # ShadowTalk
 
