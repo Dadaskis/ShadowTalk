@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_dark"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <!-- ScrollView keeps content accessible on small screens -->
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- ========== TARGET AUDIO SECTION ========== -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/target_audio_title"
+                android:textColor="@color/accent_purple"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <!-- Shows the selected file name or placeholder -->
+            <TextView
+                android:id="@+id/tvTargetFileName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/no_file_selected"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp" />
+
+            <!-- Custom view that draws the target audio waveform -->
+            <com.shadowtalk.WaveformView
+                android:id="@+id/waveformTarget"
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:layout_marginTop="8dp"
+                android:background="@color/surface_dark"
+                app:waveformColor="@color/waveform_target" />
+
+            <!-- Divider between target and recorded sections -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="16dp"
+                android:background="@color/divider" />
+
+            <!-- ========== RECORDED AUDIO SECTION ========== -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/recorded_audio_title"
+                android:textColor="@color/accent_purple"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <!-- Shows the recorded file name or placeholder -->
+            <TextView
+                android:id="@+id/tvRecordedFileName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/no_recording_yet"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp" />
+
+            <!-- Custom view that draws the recorded audio waveform -->
+            <com.shadowtalk.WaveformView
+                android:id="@+id/waveformRecorded"
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:layout_marginTop="8dp"
+                android:background="@color/surface_dark"
+                app:waveformColor="@color/waveform_recorded" />
+
+            <!-- Divider before controls -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="16dp"
+                android:background="@color/divider" />
+
+            <!-- ========== CONTROL BUTTONS ========== -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSelectAudio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/select_audio"
+                app:backgroundTint="@color/accent_purple" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRecord"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:enabled="false"
+                android:text="@string/record"
+                app:backgroundTint="@color/accent_purple" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPlayRecorded"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:enabled="false"
+                android:text="@string/play_recorded"
+                app:backgroundTint="@color/accent_purple" />
+
+            <!-- ========== OPTIONAL CHECKBOXES ========== -->
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/checkMuteTarget"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/mute_target"
+                android:textColor="@color/text_primary"
+                app:buttonTint="@color/accent_purple" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/checkManualStop"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/manual_stop"
+                android:textColor="@color/text_primary"
+                app:buttonTint="@color/accent_purple" />
+
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

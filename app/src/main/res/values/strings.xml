@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ShadowTalk</string>
+
+    <!-- Section titles -->
+    <string name="target_audio_title">Target Audio</string>
+    <string name="recorded_audio_title">Your Recording</string>
+
+    <!-- Button labels -->
+    <string name="select_audio">Select Audio</string>
+    <string name="record">Record</string>
+    <string name="stop_record">Stop Recording</string>
+    <string name="play_recorded">Play Recorded</string>
+    <string name="stop_playback">Stop Playback</string>
+
+    <!-- Checkbox labels -->
+    <string name="mute_target">Mute target during recording</string>
+    <string name="manual_stop">Manual stop</string>
+
+    <!-- Placeholder text -->
+    <string name="no_file_selected">No audio file selected</string>
+    <string name="no_recording_yet">No recording yet</string>
+
+    <!-- Permission rationale messages -->
+    <string name="permission_audio_rationale">ShadowTalk needs access to audio files so you can select practice material.</string>
+    <string name="permission_record_rationale">ShadowTalk needs microphone access to record your shadowing practice.</string>
+    <string name="permission_denied_storage">Storage permission denied. You cannot select audio files.</string>
+    <string name="permission_denied_mic">Microphone permission denied. You cannot record.</string>
+
+    <!-- User feedback messages -->
+    <string name="select_file_first">Please select a target audio file first.</string>
+    <string name="recording_started">Recording started. Speak along with the target audio.</string>
+    <string name="recording_stopped">Recording saved.</string>
+    <string name="recording_failed">Recording failed. Please try again.</string>
+    <string name="playback_failed">Playback failed.</string>
+    <string name="waveform_failed">Could not generate waveform.</string>
+    <string name="loading_waveform">Loading waveform…</string>
+</resources>

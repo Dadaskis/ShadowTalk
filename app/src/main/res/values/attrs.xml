@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Custom attributes for WaveformView -->
+    <declare-styleable name="WaveformView">
+        <!-- Color used to draw the waveform bars -->
+        <attr name="waveformColor" format="color" />
+    </declare-styleable>
+</resources>

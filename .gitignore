@@ -1,0 +1,59 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local configuration (SDK path, etc.)
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/gradle.xml
+.idea/compiler.xml
+.idea/misc.xml
+.idea/deploymentTargetDropDown.xml
+.idea/render.experimental.xml
+
+# Kotlin
+.kotlin/
+
+# Captures / logs
+captures/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Keystores (never commit signing keys)
+*.jks
+*.keystore
+
+# Google Services (if added later)
+google-services.json
+
+# NDK / native
+.externalNativeBuild/
+.cxx/
+
+# Version control / backup
+*~
+*.swp
+*.swo
+
+# Generated APK / AAB
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Profiling
+*.hprof

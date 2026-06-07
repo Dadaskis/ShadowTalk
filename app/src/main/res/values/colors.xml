@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark theme palette -->
+    <color name="background_dark">#121212</color>
+    <color name="surface_dark">#1E1E1E</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B3FFFFFF</color>
+    <color name="accent_purple">#BB86FC</color>
+    <color name="waveform_target">#BB86FC</color>
+    <color name="waveform_recorded">#03DAC6</color>
+    <color name="divider">#2C2C2C</color>
+</resources>
