@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.shadowtalk.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -274,7 +275,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             // Automatic mode: stop recording when target playback finishes
             audioPlayerManager.onPlaybackComplete = {
-                runOnUiThread { stopRecordingSession() }
+                stopRecordingSession()
             }
 
             if (!muteTarget) {
@@ -291,7 +292,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun startMutedAutoStopTimer(uri: Uri) {
         audioPlayerManager.onPlaybackComplete = {
-            runOnUiThread { stopRecordingSession() }
+            stopRecordingSession()
         }
         audioPlayerManager.playUri(uri, muteWhenPlaying = true)
     }
@@ -304,6 +305,7 @@ class MainActivity : AppCompatActivity() {
 
         isRecordingSession = false
         audioPlayerManager.onPlaybackComplete = null
+        // Player may already be released by the completion callback; stop() is safe to call again
         audioPlayerManager.stop()
 
         val path = audioRecorderManager.stopRecording()
@@ -330,6 +332,9 @@ class MainActivity : AppCompatActivity() {
      */
     private fun loadRecordedWaveform(filePath: String) {
         lifecycleScope.launch {
+            // Brief pause lets MediaRecorder fully release the microphone before decoding
+            delay(300)
+
             val samples = withContext(Dispatchers.IO) {
                 audioPlayerManager.captureWaveformFromFile(filePath)
             }

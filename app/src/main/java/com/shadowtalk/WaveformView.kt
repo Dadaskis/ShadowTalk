@@ -69,8 +69,8 @@ class WaveformView @JvmOverloads constructor(
         val barWidth = ((width - gap * (barCount - 1)) / barCount).coerceAtLeast(1f)
 
         amplitudes.forEachIndexed { index, amplitude ->
-            // Minimum bar height so silent sections are still visible as a thin line
-            val barHeight = (amplitude * height * 0.9f).coerceAtLeast(2f)
+            // Scale bar height by amplitude; very quiet sections stay as thin lines
+            val barHeight = (amplitude * height * 0.95f).coerceAtLeast(1f)
             val left = index * (barWidth + gap)
             val top = centerY - barHeight / 2f
             val right = left + barWidth
