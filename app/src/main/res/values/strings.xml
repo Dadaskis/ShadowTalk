@@ -8,10 +8,18 @@
 
     <!-- Button labels -->
     <string name="select_audio">Select Audio</string>
+    <string name="play_selected">Play Selected</string>
+    <string name="stop_target">Stop Target</string>
     <string name="record">Record</string>
     <string name="stop_record">Stop Recording</string>
     <string name="play_recorded">Play Recorded</string>
     <string name="stop_playback">Stop Playback</string>
+
+    <!-- Recordings history -->
+    <string name="btn_recordings">Recordings</string>
+    <string name="prior_recordings">Prior Recordings</string>
+    <string name="no_prior_recordings">No prior recordings found</string>
+    <string name="close">Close</string>
 
     <!-- Checkbox labels -->
     <string name="mute_target">Mute target during recording</string>

@@ -3,54 +3,47 @@ package com.shadowtalk
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.view.LayoutInflater
+import android.view.View
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.shadowtalk.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-/**
- * Main (and only) activity for ShadowTalk voice shadowing practice.
- *
- * Flow:
- * 1. User selects a target audio file
- * 2. App displays the target waveform
- * 3. User presses Record — target audio plays (unless muted) while mic records
- * 4. Recording stops automatically when target ends (unless manual stop is enabled)
- * 5. Recorded waveform is shown and can be played back
- */
 class MainActivity : AppCompatActivity() {
 
-    // ViewBinding gives type-safe access to all views in activity_main.xml
     private lateinit var binding: ActivityMainBinding
 
-    // Managers for playback, recording, and permissions
     private lateinit var audioPlayerManager: AudioPlayerManager
     private lateinit var audioRecorderManager: AudioRecorderManager
 
-    // Uri of the user-selected target audio file (from document picker)
     private var targetAudioUri: Uri? = null
-
-    // Display name of the selected target file
     private var targetFileName: String? = null
-
-    // Path to the most recent recording in app-private storage
     private var recordedFilePath: String? = null
 
-    // True while a shadowing recording session is active
     private var isRecordingSession = false
-
-    // True while recorded audio is playing back
     private var isPlayingRecorded = false
+    private var isPlayingTarget = false
+    private var isPlayingPrior = false
+    private var priorPlayingPath: String? = null
 
-    /**
-     * Launcher for the system document picker (audio files only).
-     */
+    private var recordingsDialog: BottomSheetDialog? = null
+
     private val pickAudioLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri ->
@@ -59,9 +52,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Launcher for requesting runtime permissions on first launch.
-     */
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
@@ -71,27 +61,17 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Inflate layout using ViewBinding
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Create audio helper classes
         audioPlayerManager = AudioPlayerManager(this)
         audioRecorderManager = AudioRecorderManager(this)
 
-        // Wire up button click listeners
         setupClickListeners()
-
-        // Ask for permissions the first time the activity opens
         requestPermissionsIfNeeded()
-
-        // Disable controls until permissions are granted
         updateUiForPermissions()
     }
 
-    /**
-     * Assigns click handlers to all interactive UI elements.
-     */
     private fun setupClickListeners() {
         binding.btnSelectAudio.setOnClickListener {
             if (!PermissionHelper.hasStoragePermission(this)) {
@@ -101,9 +81,16 @@ class MainActivity : AppCompatActivity() {
             pickAudioLauncher.launch("audio/*")
         }
 
+        binding.btnPlaySelected.setOnClickListener {
+            if (isPlayingTarget) {
+                stopTargetPlayback()
+            } else {
+                playTargetAudio()
+            }
+        }
+
         binding.btnRecord.setOnClickListener {
             if (isRecordingSession) {
-                // Manual stop mode: second press ends the recording
                 stopRecordingSession()
             } else {
                 startRecordingSession()
@@ -117,15 +104,15 @@ class MainActivity : AppCompatActivity() {
                 playRecordedAudio()
             }
         }
+
+        binding.btnRecordings.setOnClickListener {
+            showRecordingsDialog()
+        }
     }
 
-    /**
-     * Requests all required permissions if any are still missing.
-     */
     private fun requestPermissionsIfNeeded() {
         if (!PermissionHelper.hasAllPermissions(this)) {
             if (PermissionHelper.shouldShowRationale(this)) {
-                // User denied before — explain why we need permissions
                 AlertDialog.Builder(this)
                     .setTitle(R.string.app_name)
                     .setMessage(
@@ -143,10 +130,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Updates button enabled state based on granted permissions and app state.
-     */
-    private fun handlePermissionResults(results: Map<String, Boolean>) {
+    private fun handlePermissionResults(@Suppress("UNUSED_PARAMETER") results: Map<String, Boolean>) {
         updateUiForPermissions()
 
         if (!PermissionHelper.hasStoragePermission(this)) {
@@ -157,22 +141,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Enables or disables buttons depending on permissions and current selections.
-     */
     private fun updateUiForPermissions() {
         val hasStorage = PermissionHelper.hasStoragePermission(this)
         val hasMic = PermissionHelper.hasRecordPermission(this)
         val hasTarget = targetAudioUri != null
 
         binding.btnSelectAudio.isEnabled = hasStorage
-        binding.btnRecord.isEnabled = hasMic && hasTarget && !isPlayingRecorded
-        binding.btnPlayRecorded.isEnabled = hasMic && recordedFilePath != null && !isRecordingSession
+        binding.btnPlaySelected.isEnabled = hasMic && hasTarget && !isRecordingSession && !isPlayingRecorded && !isPlayingPrior
+        binding.btnRecord.isEnabled = hasMic && hasTarget && !isPlayingRecorded && !isPlayingTarget && !isPlayingPrior
+        binding.btnPlayRecorded.isEnabled = hasMic && recordedFilePath != null && !isRecordingSession && !isPlayingTarget && !isPlayingPrior
+        binding.btnRecordings.isEnabled = true
     }
 
-    /**
-     * Called when the user picks an audio file from storage.
-     */
     private fun handleSelectedAudio(uri: Uri) {
         targetAudioUri = uri
         targetFileName = queryDisplayName(uri) ?: uri.lastPathSegment ?: "audio"
@@ -182,15 +162,12 @@ class MainActivity : AppCompatActivity() {
         binding.tvRecordedFileName.text = getString(R.string.no_recording_yet)
         binding.waveformRecorded.clearWaveform()
 
+        stopAllPlayback()
         updateUiForPermissions()
 
-        // Generate target waveform on a background thread
         loadTargetWaveform(uri)
     }
 
-    /**
-     * Reads the display name of a content Uri from the content provider.
-     */
     private fun queryDisplayName(uri: Uri): String? {
         return contentResolver.query(uri, null, null, null, null)?.use { cursor ->
             val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
@@ -202,9 +179,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Loads waveform data for the target audio using Visualizer in a coroutine.
-     */
     private fun loadTargetWaveform(uri: Uri) {
         binding.tvTargetFileName.text = "$targetFileName\n${getString(R.string.loading_waveform)}"
 
@@ -224,9 +198,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Starts a shadowing session: plays target audio (optional) and records the microphone.
-     */
+    private fun playTargetAudio() {
+        val uri = targetAudioUri ?: return
+
+        stopAllPlayback()
+        audioPlayerManager.onPlaybackComplete = null
+
+        isPlayingTarget = true
+        binding.btnPlaySelected.text = getString(R.string.stop_target)
+        binding.btnRecord.isEnabled = false
+        binding.btnPlayRecorded.isEnabled = false
+
+        audioPlayerManager.playUri(uri, onComplete = {
+            runOnUiThread { stopTargetPlayback() }
+        })
+    }
+
+    private fun stopTargetPlayback() {
+        isPlayingTarget = false
+        audioPlayerManager.stop()
+        binding.btnPlaySelected.text = getString(R.string.play_selected)
+        updateUiForPermissions()
+    }
+
     private fun startRecordingSession() {
         val uri = targetAudioUri
         if (uri == null) {
@@ -239,7 +233,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // Begin microphone recording first
+        stopAllPlayback()
+
         val recordingPath = audioRecorderManager.startRecording()
         if (recordingPath == null) {
             showToast(getString(R.string.recording_failed))
@@ -251,7 +246,6 @@ class MainActivity : AppCompatActivity() {
         binding.waveformRecorded.clearWaveform()
         binding.tvRecordedFileName.text = getString(R.string.no_recording_yet)
 
-        // Update record button label depending on manual stop setting
         binding.btnRecord.text = if (binding.checkManualStop.isChecked) {
             getString(R.string.stop_record)
         } else {
@@ -260,6 +254,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnRecord.isEnabled = binding.checkManualStop.isChecked
         binding.btnSelectAudio.isEnabled = false
+        binding.btnPlaySelected.isEnabled = false
         binding.btnPlayRecorded.isEnabled = false
 
         showToast(getString(R.string.recording_started))
@@ -268,12 +263,10 @@ class MainActivity : AppCompatActivity() {
         val manualStop = binding.checkManualStop.isChecked
 
         if (manualStop) {
-            // Manual mode: target plays once but user stops recording with the button
             if (!muteTarget) {
                 audioPlayerManager.playUri(uri, muteWhenPlaying = false)
             }
         } else {
-            // Automatic mode: stop recording when target playback finishes
             audioPlayerManager.onPlaybackComplete = {
                 stopRecordingSession()
             }
@@ -281,15 +274,11 @@ class MainActivity : AppCompatActivity() {
             if (!muteTarget) {
                 audioPlayerManager.playUri(uri, muteWhenPlaying = false)
             } else {
-                // Muted target with auto-stop: use silent waveform pass duration as timer
                 startMutedAutoStopTimer(uri)
             }
         }
     }
 
-    /**
-     * When target is muted but auto-stop is enabled, play silently to know when to stop recording.
-     */
     private fun startMutedAutoStopTimer(uri: Uri) {
         audioPlayerManager.onPlaybackComplete = {
             stopRecordingSession()
@@ -297,15 +286,11 @@ class MainActivity : AppCompatActivity() {
         audioPlayerManager.playUri(uri, muteWhenPlaying = true)
     }
 
-    /**
-     * Stops the active recording session and loads the recorded waveform.
-     */
     private fun stopRecordingSession() {
         if (!isRecordingSession) return
 
         isRecordingSession = false
         audioPlayerManager.onPlaybackComplete = null
-        // Player may already be released by the completion callback; stop() is safe to call again
         audioPlayerManager.stop()
 
         val path = audioRecorderManager.stopRecording()
@@ -327,12 +312,8 @@ class MainActivity : AppCompatActivity() {
         loadRecordedWaveform(path)
     }
 
-    /**
-     * Generates waveform data for the saved recording file.
-     */
     private fun loadRecordedWaveform(filePath: String) {
         lifecycleScope.launch {
-            // Brief pause lets MediaRecorder fully release the microphone before decoding
             delay(300)
 
             val samples = withContext(Dispatchers.IO) {
@@ -347,25 +328,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Plays back the user's recorded shadowing audio.
-     */
     private fun playRecordedAudio() {
         val path = recordedFilePath ?: return
+
+        stopAllPlayback()
 
         isPlayingRecorded = true
         binding.btnPlayRecorded.text = getString(R.string.stop_playback)
         binding.btnRecord.isEnabled = false
         binding.btnSelectAudio.isEnabled = false
+        binding.btnPlaySelected.isEnabled = false
 
         audioPlayerManager.playFile(path) {
             runOnUiThread { stopRecordedPlayback() }
         }
     }
 
-    /**
-     * Stops playback of the recorded audio and restores button states.
-     */
     private fun stopRecordedPlayback() {
         isPlayingRecorded = false
         audioPlayerManager.stop()
@@ -373,16 +351,109 @@ class MainActivity : AppCompatActivity() {
         updateUiForPermissions()
     }
 
-    /**
-     * Shows a short message to the user.
-     */
+    private fun stopAllPlayback() {
+        audioPlayerManager.stop()
+        isPlayingTarget = false
+        isPlayingRecorded = false
+        isPlayingPrior = false
+        priorPlayingPath = null
+        binding.btnPlaySelected.text = getString(R.string.play_selected)
+        binding.btnPlayRecorded.text = getString(R.string.play_recorded)
+    }
+
+    private fun showRecordingsDialog() {
+        if (recordingsDialog?.isShowing == true) return
+
+        val dialog = BottomSheetDialog(this).apply {
+            behavior.isDraggable = false
+            setOnDismissListener { recordingsDialog = null }
+        }
+        recordingsDialog = dialog
+
+        val sheetView = LayoutInflater.from(this)
+            .inflate(R.layout.bottom_sheet_recordings, null) as LinearLayout
+
+        val recycler = sheetView.findViewById<RecyclerView>(R.id.recyclerRecordings)
+        val progressBar = sheetView.findViewById<View>(R.id.progressLoading)
+        val emptyText = sheetView.findViewById<TextView>(R.id.tvEmptyRecordings)
+
+        recycler.layoutManager = LinearLayoutManager(this)
+        recycler.isNestedScrollingEnabled = false
+        progressBar.visibility = View.VISIBLE
+        recycler.visibility = View.GONE
+        emptyText.visibility = View.GONE
+
+        sheetView.findViewById<View>(R.id.btnCloseSheet).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.setContentView(sheetView)
+        dialog.show()
+
+        lifecycleScope.launch {
+            val recordings = withContext(Dispatchers.IO) { getRecordingsList() }
+
+            if (dialog.isShowing) {
+                progressBar.visibility = View.GONE
+
+                if (recordings.isEmpty()) {
+                    emptyText.visibility = View.VISIBLE
+                } else {
+                    recycler.visibility = View.VISIBLE
+                    recycler.adapter = RecordingAdapter(recordings) { recording ->
+                        playPriorRecording(recording.absolutePath)
+                    }
+                }
+            }
+        }
+    }
+
+    data class RecordingEntry(val name: String, val absolutePath: String, val date: Date)
+
+    private fun getRecordingsList(): List<RecordingEntry> {
+        val filesDir = filesDir ?: return emptyList()
+        val recordings = filesDir.listFiles { file ->
+            file.isFile && file.name.startsWith("recording_") && file.name.endsWith(".m4a")
+        } ?: return emptyList()
+
+        return recordings
+            .map { file ->
+                val date = try {
+                    val dateStr = file.name
+                        .removePrefix("recording_")
+                        .removeSuffix(".m4a")
+                    SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).parse(dateStr)
+                } catch (_: Exception) {
+                    Date(file.lastModified())
+                }
+                RecordingEntry(file.name, file.absolutePath, date ?: Date(file.lastModified()))
+            }
+            .sortedByDescending { it.date }
+    }
+
+    private fun playPriorRecording(path: String) {
+        stopAllPlayback()
+
+        isPlayingPrior = true
+        priorPlayingPath = path
+        updateUiForPermissions()
+
+        audioPlayerManager.playFile(path) {
+            runOnUiThread { stopPriorPlayback() }
+        }
+    }
+
+    private fun stopPriorPlayback() {
+        isPlayingPrior = false
+        priorPlayingPath = null
+        audioPlayerManager.stop()
+        updateUiForPermissions()
+    }
+
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
-    /**
-     * Release audio resources when the activity is destroyed.
-     */
     override fun onDestroy() {
         super.onDestroy()
         audioPlayerManager.stop()

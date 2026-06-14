@@ -9,15 +9,40 @@
     android:padding="16dp"
     tools:context=".MainActivity">
 
+    <!-- App title bar -->
+    <TextView
+        android:id="@+id/tvAppTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingVertical="8dp"
+        android:text="@string/app_name"
+        android:textColor="@color/accent_purple"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnRecordings" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRecordings"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/btn_recordings"
+        android:textColor="@color/accent_purple"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <!-- ScrollView keeps content accessible on small screens -->
     <ScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginTop="8dp"
         android:fillViewport="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/tvAppTitle">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -100,6 +125,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/select_audio"
+                app:backgroundTint="@color/accent_purple" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPlaySelected"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:enabled="false"
+                android:text="@string/play_selected"
                 app:backgroundTint="@color/accent_purple" />
 
             <com.google.android.material.button.MaterialButton
